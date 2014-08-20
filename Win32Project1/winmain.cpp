@@ -3,73 +3,45 @@
 #endif
 
 #include <windows.h>
-
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#include <shobjidl.h>
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-	// Register the window class
-	const wchar_t CLASS_NAME[] = L"Sample Window Class";
-
-	WNDCLASS wc = {};
-
-	wc.lpfnWndProc = WindowProc;
-	wc.hInstance = hInstance;
-	wc.lpszClassName = CLASS_NAME;
-
-	RegisterClass(&wc);
-
-	// Create the window
-	HWND hwnd = CreateWindowEx(
-		0,		// Optional window styles
-		CLASS_NAME,	// Window class
-		L"Learn to Program Windows",	// Window Text
-		WS_OVERLAPPEDWINDOW,			// Window style
-
-		// Size and positon
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-
-		NULL,	// Parent window
-		NULL,	// Menu
-		hInstance,	// Instance handle
-		NULL		// Additonal application data
-		);
-
-	if (hwnd == NULL)
+	HRESULT  hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr))
 	{
-		return 0;
-	}
+		IFileOpenDialog *pFileOpen;
 
-	ShowWindow(hwnd, nCmdShow);
+		// Create the FileOpenDialog
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
 
-	// Run the message loop
-	MSG msg = {};
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (SUCCEEDED(hr))
+		{
+			// Show the Open dialog 
+			hr = pFileOpen->Show(NULL);
+
+			// Get the file name from the dialog box
+			if (SUCCEEDED(hr))
+			{
+				IShellItem *pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+					// and display to the user
+					if (SUCCEEDED(hr))
+					{
+						MessageBox(NULL, pszFilePath, L"File Path", MB_OK);
+						CoTaskMemFree(pszFilePath);
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
 	}
 	return 0;
-}
-
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-
-	case WM_PAINT:
-	{
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
-
-		FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-
-		EndPaint(hwnd, &ps);
-	}
-		return 0;
-	}
-	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
