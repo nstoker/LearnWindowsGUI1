@@ -4,42 +4,42 @@
 
 #include <windows.h>
 #include <shobjidl.h>
+#include <atlbase.h> // Contains the declaration of CComPtr
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
 	HRESULT  hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	if (SUCCEEDED(hr))
 	{
-		IFileOpenDialog *pFileOpen;
+		CComPtr<IFileOpenDialog> pFileOpen;
 
-		// Create the FileOpenDialog
-		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
-
+		// Create the FileOpenDialog object
+		hr = pFileOpen.CoCreateInstance(__uuidof(FileOpenDialog));
 		if (SUCCEEDED(hr))
 		{
-			// Show the Open dialog 
+			// Show the open dialog box
 			hr = pFileOpen->Show(NULL);
 
 			// Get the file name from the dialog box
 			if (SUCCEEDED(hr))
 			{
-				IShellItem *pItem;
+				CComPtr<IShellItem> pItem;
 				hr = pFileOpen->GetResult(&pItem);
 				if (SUCCEEDED(hr))
 				{
 					PWSTR pszFilePath;
 					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
 
-					// and display to the user
+					// Display the file name to the user
 					if (SUCCEEDED(hr))
 					{
 						MessageBox(NULL, pszFilePath, L"File Path", MB_OK);
 						CoTaskMemFree(pszFilePath);
 					}
-					pItem->Release();
 				}
+				// pItem goes out of scope
 			}
-			pFileOpen->Release();
+			// pFileOpen goes out of scope
 		}
 		CoUninitialize();
 	}
