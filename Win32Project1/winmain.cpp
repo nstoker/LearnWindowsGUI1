@@ -174,4 +174,3 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	return DefWindowProc(m_hwnd, uMsg, wParam, lParam);
 }
-
